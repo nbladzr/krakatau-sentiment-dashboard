@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krakatau Pulse - Sentimen & API Settings</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #F8FAFC;
+            background-image: 
+                radial-gradient(at 5% 5%, rgba(224, 242, 254, 0.8) 0px, transparent 50%),
+                radial-gradient(at 95% 10%, rgba(254, 226, 226, 0.6) 0px, transparent 50%),
+                radial-gradient(at 50% 90%, rgba(243, 232, 255, 0.7) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #0F172A;
+        }
+
+        .light-glass-panel {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+        }
+
+        .feed-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .feed-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(14, 165, 233, 0.4);
+            box-shadow: 0 20px 35px -8px rgba(14, 165, 233, 0.12), 0 8px 15px -4px rgba(0, 0, 0, 0.03);
+        }
+
+        .comment-bubble {
+            background: rgba(241, 245, 249, 0.8);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.2s ease;
+        }
+
+        .badge-khawatir { background: #FFE4E6; color: #E11D48; border: 1px solid #FECDD3; }
+        .badge-edukasi { background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD; }
+        .badge-positif { background: #D1FAE5; color: #059669; border: 1px solid #A7F3D0; }
+    </style>
+</head>
+<body class="font-sans antialiased min-h-screen pb-16 flex flex-col">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 light-glass-panel border-b border-slate-200/80 mb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3.5">
+                <div class="p-3 bg-gradient-to-tr from-rose-500 via-amber-500 to-sky-500 rounded-2xl shadow-lg text-white">
+                    <i class="fa-solid fa-volcano text-2xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-lg sm:text-xl font-black tracking-tight text-slate-900">
+                            Krakatau<span class="bg-clip-text text-transparent bg-gradient-to-r from-rose-600 via-sky-600 to-indigo-600">Pulse</span>
+                        </h1>
+                        <span class="bg-rose-100 text-rose-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-rose-200 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                            Live Dashboard
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium">Monitoring Sentimen & Opini Netizen Abu Vulkanik Krakatau</p>
+                </div>
+            </div>
+
+            <!-- Header API Controls & Tabs -->
+            <div class="flex items-center space-x-3">
+                <!-- Tombol Pengaturan API -->
+                <button onclick="openApiSettingsModal()" class="flex items-center space-x-2 light-glass-panel px-3 py-2 rounded-xl border border-slate-200/80 hover:bg-slate-100 transition shadow-sm">
+                    <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-gear text-xs"></i>
+                    </div>
+                    <div class="text-xs text-left hidden sm:block">
+                        <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-bold">Pengaturan API</span>
+                        <span id="nav-apify-preview" class="font-mono text-emerald-600 font-bold">Dynamic Token</span>
+                    </div>
+                </button>
+
+                <!-- Tabs Switcher -->
+                <div class="bg-slate-200/70 p-1 rounded-xl flex space-x-1 border border-slate-300/50">
+                    <button onclick="switchView('feed')" id="tab-feed" class="view-tab px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-900 shadow-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-comments text-sky-600"></i>
+                        <span>Feed & Komentar</span>
+                    </button>
+                    <button onclick="switchView('analytics')" id="tab-analytics" class="view-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-pie text-rose-500"></i>
+                        <span>Analisis Sentimen</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 flex-1 w-full">
+
+        <!-- Banner Top -->
+        <section class="light-glass-panel p-5 sm:p-6 rounded-3xl border border-slate-200/80 bg-white/80">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="space-y-1.5">
+                    <div class="flex items-center space-x-2 text-xs text-sky-600 font-bold">
+                        <i class="fa-solid fa-bullhorn text-sky-500"></i>
+                        <span>Apify & Gemini AI Integration</span>
+                        <span class="text-slate-300">•</span>
+                        <span>8 Video Laporan Berita & Opini Netizen</span>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+                        Eksplorasi Persepsi Publik & Respon Komunitas Terhadap Erupsi Anak Krakatau
+                    </h2>
+                </div>
+
+                <button onclick="exportJSON()" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md transition flex items-center gap-2 shrink-0">
+                    <i class="fa-solid fa-download text-sky-400"></i> Unduh Dataset JSON
+                </button>
+            </div>
+        </section>
+
+        <!-- Filter & Search Bar -->
+        <section class="flex flex-col md:flex-row gap-3 justify-between items-center light-glass-panel p-3.5 rounded-2xl border border-slate-200/80">
+            <div class="flex flex-wrap gap-1.5 w-full md:w-auto">
+                <button onclick="filterFeed('all', this)" class="filter-chip active px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-sky-600 text-white shadow-md shadow-sky-500/20">
+                    Semua Content (8)
+                </button>
+                <button onclick="filterFeed('Kekhawatiran', this)" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span> Kekhawatiran (4)
+                </button>
+                <button onclick="filterFeed('Edukasi', this)" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-sky-500"></span> Edukasi BMKG (3)
+                </button>
+                <button onclick="filterFeed('Positif', this)" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Membaik / Positif (1)
+                </button>
+            </div>
+
+            <div class="relative w-full md:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" id="search-input" onkeyup="searchFeed()" placeholder="Cari isi berita atau komentar netizen..." 
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-sky-500 transition-all">
+            </div>
+        </section>
+
+        <!-- VIEW 1: Feed Grid -->
+        <div id="view-feed-container" class="space-y-6">
+            <div id="feed-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+
+        <!-- VIEW 2: Analytics & Charts -->
+        <div id="view-analytics-container" class="hidden space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="light-glass-panel p-5 rounded-2xl border-l-4 border-l-sky-500">
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Total Posts Scraped</span>
+                    <div class="text-2xl font-black text-slate-900">8 Video</div>
+                </div>
+                <div class="light-glass-panel p-5 rounded-2xl border-l-4 border-l-purple-500">
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Total Views</span>
+                    <div class="text-2xl font-black text-purple-700">496,827</div>
+                </div>
+                <div class="light-glass-panel p-5 rounded-2xl border-l-4 border-l-rose-500">
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Sentimen Utama</span>
+                    <div class="text-2xl font-black text-rose-600">Kekhawatiran</div>
+                </div>
+                <div class="light-glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500">
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Arah Sebaran Abu</span>
+                    <div class="text-2xl font-black text-emerald-600">Samudra Hindia</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="light-glass-panel p-6 rounded-3xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-sky-600"></i> Distribusi Sentimen
+                        </h3>
+                    </div>
+                    <div class="relative w-full aspect-square max-w-[210px] mx-auto my-2">
+                        <canvas id="sentimentChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 light-glass-panel p-6 rounded-3xl space-y-5">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-tags text-amber-500"></i> Kata Kunci Komentar Trending
+                    </h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-100 text-rose-700">#SilikaParuParu (142x)</span>
+                        <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-100 text-sky-700">#MaskerN95 (98x)</span>
+                        <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-800">#WisataAnyer (76x)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: Settings API Key Drawer -->
+    <div id="api-settings-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="light-glass-panel bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-sliders text-sm"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-slate-900 text-sm">Pengaturan Kunci API</h4>
+                        <p class="text-[11px] text-slate-500">Masukkan Token Apify / Key Kamu di Sini</p>
+                    </div>
+                </div>
+                <button onclick="closeApiSettingsModal()" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Apify Input -->
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-800 flex items-center justify-between">
+                        <span>Apify API Token / Key</span>
+                        <span id="badge-apify-status" class="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Active</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="input-apify-token" placeholder="Masukkan token seperti tKznjdJNeI2CqGIgv..." 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 pr-10 text-xs font-mono text-slate-800 focus:outline-none focus:border-sky-500 transition">
+                        <button type="button" onclick="togglePasswordVisibility('input-apify-token', this)" class="absolute right-3 top-3 text-slate-400">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gemini Input -->
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-800 flex items-center justify-between">
+                        <span>Google Gemini API Key (Opsional)</span>
+                        <span class="text-[10px] text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">AI Active</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="input-gemini-key" placeholder="AIzaSy..." 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 pr-10 text-xs font-mono text-slate-800 focus:outline-none focus:border-purple-500 transition">
+                        <button type="button" onclick="togglePasswordVisibility('input-gemini-key', this)" class="absolute right-3 top-3 text-slate-400">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
+                <button onclick="closeApiSettingsModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                    Batal
+                </button>
+                <button onclick="saveApiSettings()" class="px-4 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-md transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-floppy-disk text-xs"></i> Simpan Pengaturan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs flex items-center space-x-2 transform translate-y-20 opacity-0 transition-all duration-300">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toast-message">Notifikasi</span>
+    </div>
+
+    <script>
+        // Inisialisasi API Key dari LocalStorage atau default token milikmu
+        let APIFY_API_TOKEN = localStorage.getItem('apify_token') || "tKznjdJNeI2CqGIgv";
+        let GEMINI_API_KEY = localStorage.getItem('gemini_key') || "";
+
+        const apifyData = [
+            {
+                id: "p25QNJ5lmTM",
+                title: "Bahaya Abu Vulkanik Anak Krakatau, Menkes: Dapat Merusak Paru-paru",
+                channelName: "Kompas.com",
+                viewCount: 3290,
+                likes: 9,
+                commentsCount: 18,
+                date: "2026-09-07T11:51:33.000Z",
+                url: "https://www.youtube.com/watch?v=p25QNJ5lmTM",
+                sentiment: "Kekhawatiran",
+                badgeClass: "badge-khawatir",
+                icon: "fa-solid fa-lungs text-rose-500",
+                summary: "Menkes Budi Gunadi Sadikin memperingatkan kandungan silika dalam abu vulkanik dapat merusak paru-paru.",
+                comments: [
+                    { user: "Rian_Banten99", text: "Tolong bagi-bagi masker gratis pak ke daerah Serang Anyer!", time: "2 jam yang lalu", tag: "Khawatir ISPA" }
+                ]
+            },
+            {
+                id: "FjNRcLfBszw",
+                title: "Abu Vulkanik Gunung Anak Krakatau Terus Meluas | AKIM tvOne",
+                channelName: "tvOneNews",
+                viewCount: 9145,
+                likes: 15,
+                commentsCount: 28,
+                date: "2026-09-06T11:48:23.000Z",
+                url: "https://www.youtube.com/watch?v=FjNRcLfBszw",
+                sentiment: "Kekhawatiran",
+                badgeClass: "badge-khawatir",
+                icon: "fa-solid fa-video-slash text-rose-500",
+                summary: "Sejumlah kamera pengawas erupsi di sekitar Gunung Anak Krakatau dilaporkan rusak.",
+                comments: [
+                    { user: "TeknisiPantaian", text: "CCTV pos pantau sampai buram terkena jelaga abu.", time: "1 hari yang lalu", tag: "Laporan Lapangan" }
+                ]
+            },
+            {
+                id: "xEAs8N1T57M",
+                title: "[FULL] GUNUNG ANAK KRAKATAU ERUPSI, 5 PROVINSI DIGUYUR ABU VULKANIK",
+                channelName: "METRO TV",
+                viewCount: 288774,
+                likes: 567,
+                commentsCount: 76,
+                date: "2026-09-06T11:19:37.000Z",
+                url: "https://www.youtube.com/watch?v=xEAs8N1T57M",
+                sentiment: "Kekhawatiran",
+                badgeClass: "badge-khawatir",
+                icon: "fa-solid fa-map-location-dot text-rose-500",
+                summary: "Hujan abu menyebar meluas ke 5 provinsi (Banten, DKI Jakarta, Jabar, Lampung, Bengkulu).",
+                comments: [
+                    { user: "AnakJakarta_Selatan", text: "Pantesan pagi ini kaca mobil di kawasan Jaksel ada serbuk abu.", time: "2 hari yang lalu", tag: "Keluhan Debu" }
+                ]
+            },
+            {
+                id: "gfxgaDBAgUM",
+                title: "Abu Vulkanik Anak Krakatau Jauhi Indonesia, Sisa Satu Lapisan di 15.000 Kaki",
+                channelName: "Kompas.com",
+                viewCount: 16848,
+                likes: 76,
+                commentsCount: 19,
+                date: "2026-09-08T02:42:44.000Z",
+                url: "https://www.youtube.com/watch?v=gfxgaDBAgUM",
+                sentiment: "Positif",
+                badgeClass: "badge-positif",
+                icon: "fa-solid fa-circle-check text-emerald-600",
+                summary: "Abu vulkanik telah bergerak ke arah Samudra Hindia dan menjauhi pemukiman.",
+                comments: [
+                    { user: "Rizal_Traveler", text: "Alhamdulillah angin bertiup ke Samudra Hindia, daratan aman.", time: "3 jam yang lalu", tag: "Positif/Lega" }
+                ]
+            },
+            {
+                id: "c0XKvy2ouGQ",
+                title: "Sebaran Abu Vulkanik Anak Krakatau Sampai Jakarta",
+                channelName: "CNN Indonesia",
+                viewCount: 21635,
+                likes: 56,
+                commentsCount: 13,
+                date: "2026-09-06T12:10:37.000Z",
+                url: "https://www.youtube.com/watch?v=c0XKvy2ouGQ",
+                sentiment: "Edukasi",
+                badgeClass: "badge-edukasi",
+                icon: "fa-solid fa-building-shield text-sky-600",
+                summary: "BMKG & Pemprov DKI Jakarta mengimbau warga Jakarta agar tidak panik.",
+                comments: [
+                    { user: "Commuter_Jakarta", text: "Tadi naik motor mata lumayan perih kena debu tipis.", time: "2 hari yang lalu", tag: "Himbauan Kacamata" }
+                ]
+            },
+            {
+                id: "jX8iyiEfeaE",
+                title: "Abu Vulkanik Anak Krakatau Capai Anyer, Warga Khawatir Dampak kesehatan",
+                channelName: "KOMPASTV",
+                viewCount: 90463,
+                likes: 165,
+                commentsCount: 35,
+                date: "2026-09-07T12:26:49.000Z",
+                url: "https://www.youtube.com/watch?v=jX8iyiEfeaE",
+                sentiment: "Kekhawatiran",
+                badgeClass: "badge-khawatir",
+                icon: "fa-solid fa-mask-face text-rose-500",
+                summary: "Kawasan wisata pantai Anyer-Cinangka Banten terdampak abu tebal.",
+                comments: [
+                    { user: "Wisatawan_Bandung", text: "Mobil aku ditinggal semalam di Anyer bangun-bangun penuh debu.", time: "1 hari yang lalu", tag: "Keluhan Debu" }
+                ]
+            },
+            {
+                id: "GdQur21PcNQ",
+                title: "Erupsi Gunung Anak Krakatau: Abu Vulkanik Sampai Bogor hingga Nelayan Tetap Melaut",
+                channelName: "KOMPASTV",
+                viewCount: 27212,
+                likes: 63,
+                commentsCount: 11,
+                date: "2026-09-06T07:02:45.000Z",
+                url: "https://www.youtube.com/watch?v=GdQur21PcNQ",
+                sentiment: "Edukasi",
+                badgeClass: "badge-edukasi",
+                icon: "fa-solid fa-ship text-sky-600",
+                summary: "Abu terasa hingga Bogor, nelayan pesisir Pasauran Serang tetap melaut.",
+                comments: [
+                    { user: "Nelayan_Pasauran", text: "Bagi kami nelayan emang udah biasa dengar suara dentuman krakatau.", time: "3 hari yang lalu", tag: "Karakter Nelayan" }
+                ]
+            },
+            {
+                id: "hA5tEPe8j3I",
+                title: "Abu Vulkanik Gunung Anak Krakatau Menyebar ke Mana Saja?",
+                channelName: "Kompas.com",
+                viewCount: 42460,
+                likes: 117,
+                commentsCount: 19,
+                date: "2026-09-07T14:44:48.000Z",
+                url: "https://www.youtube.com/watch?v=hA5tEPe8j3I",
+                sentiment: "Edukasi",
+                badgeClass: "badge-edukasi",
+                icon: "fa-solid fa-circle-info text-sky-600",
+                summary: "Peta sebaran abu BMKG mencatat pergerakan angin berkecepatan 15 knot ke arah barat.",
+                comments: [
+                    { user: "Peta_Geologi", text: "Informatif sekali grafik animasi dari BMKG.", time: "1 hari yang lalu", tag: "Apresiasi BMKG" }
+                ]
+            }
+        ];
+
+        let activeFilter = 'all';
+        let searchQuery = '';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateApiPreviewNav();
+            renderFeedCards();
+            initChart();
+        });
+
+        function updateApiPreviewNav() {
+            const previewEl = document.getElementById('nav-apify-preview');
+            if (APIFY_API_TOKEN) {
+                previewEl.textContent = APIFY_API_TOKEN.substring(0, 10) + '...';
+            } else {
+                previewEl.textContent = 'Belum diatur';
+            }
+        }
+
+        function openApiSettingsModal() {
+            document.getElementById('input-apify-token').value = APIFY_API_TOKEN;
+            document.getElementById('input-gemini-key').value = GEMINI_API_KEY;
+            document.getElementById('api-settings-modal').classList.remove('hidden');
+        }
+
+        function closeApiSettingsModal() {
+            document.getElementById('api-settings-modal').classList.add('hidden');
+        }
+
+        function saveApiSettings() {
+            const newApify = document.getElementById('input-apify-token').value.trim();
+            const newGemini = document.getElementById('input-gemini-key').value.trim();
+
+            APIFY_API_TOKEN = newApify;
+            GEMINI_API_KEY = newGemini;
+
+            localStorage.setItem('apify_token', newApify);
+            localStorage.setItem('gemini_key', newGemini);
+
+            updateApiPreviewNav();
+            closeApiSettingsModal();
+            showToast("Kunci API berhasil diperbarui & disimpan di browser!");
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        function renderFeedCards() {
+            const container = document.getElementById('feed-cards-grid');
+            container.innerHTML = '';
+
+            const filtered = apifyData.filter(item => {
+                const matchesFilter = activeFilter === 'all' || item.sentiment === activeFilter;
+                const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      item.channelName.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesFilter && matchesSearch;
+            });
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'feed-card p-5 rounded-3xl flex flex-col justify-between space-y-4';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase ${item.badgeClass}">
+                                <i class="${item.icon}"></i> ${item.sentiment}
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono">${formatDate(item.date)}</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-900 mb-2">
+                            <a href="${item.url}" target="_blank">${item.title}</a>
+                        </h3>
+                        <p class="text-xs text-slate-600 mb-4">${item.summary}</p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span class="font-bold text-slate-800">${item.channelName}</span>
+                        <span><i class="fa-solid fa-eye"></i> ${formatNumber(item.viewCount)} views</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchView(viewName) {
+            document.getElementById('view-feed-container').classList.toggle('hidden', viewName !== 'feed');
+            document.getElementById('view-analytics-container').classList.toggle('hidden', viewName !== 'analytics');
+        }
+
+        function filterFeed(sentiment, btn) {
+            activeFilter = sentiment;
+            renderFeedCards();
+        }
+
+        function searchFeed() {
+            searchQuery = document.getElementById('search-input').value;
+            renderFeedCards();
+        }
+
+        function formatNumber(num) { return new Intl.NumberFormat('id-ID').format(num); }
+        function formatDate(dateStr) { return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); }
+
+        function initChart() {
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Kekhawatiran', 'Edukasi BMKG', 'Positif'],
+                    datasets: [{ data: [4, 3, 1], backgroundColor: ['#F43F5E', '#0284C7', '#10B981'] }]
+                },
+                options: { responsive: true, cutout: '75%' }
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+        }
+    </script>
+</body>
+</html>
